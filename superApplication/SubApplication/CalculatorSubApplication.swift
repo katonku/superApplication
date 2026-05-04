@@ -1,5 +1,62 @@
+private protocol MathOperation {
+    static var symbol: String { get }
+    var symbol: String { get }
+    
+    func calculate(_ firstNumber: Int, _ secondNumber: Int) -> Int?
+}
+
+extension MathOperation {
+    var symbol: String {
+        Self.symbol
+    }
+}
+
+class SumOperation: MathOperation {
+    static let symbol: String = "+"
+    
+    func calculate(_ firstNumber: Int, _ secondNumber: Int) -> Int? {
+        firstNumber + secondNumber
+    }
+}
+
+class SubOperation: MathOperation {
+    static let symbol: String = "-"
+    
+    func calculate(_ firstNumber: Int, _ secondNumber: Int) -> Int? {
+        firstNumber - secondNumber
+    }
+}
+
+class MultOperation: MathOperation {
+    static let symbol: String = "*"
+    
+    func calculate(_ firstNumber: Int, _ secondNumber: Int) -> Int? {
+        firstNumber * secondNumber
+    }
+}
+
+class DivOperation: MathOperation {
+    static let symbol: String = "/"
+    
+    func calculate(_ firstNumber: Int, _ secondNumber: Int) -> Int? {
+        
+        guard secondNumber != 0 else {
+            print("Division by zero is forbidden")
+            return nil
+        }
+        
+        return firstNumber / secondNumber
+    }
+}
+
 class CalculatorSubApplication: SubApplication {
     private var history = String()
+    private let operations: [String: MathOperation] = [
+        SumOperation.symbol: SumOperation(),
+        SubOperation.symbol: SubOperation(),
+        MultOperation.symbol: MultOperation(),
+        DivOperation.symbol: DivOperation()
+        ]
     
     init() {
         super.init(runButton: "c",
@@ -10,7 +67,7 @@ class CalculatorSubApplication: SubApplication {
     override func execSubApplication() -> SubApplicationExecResult {
         let menu = """
             Input a command:
-            с - Calculate (+ - * /)
+            с - Calculate
             h - History
             q - Quit
             """
@@ -44,8 +101,13 @@ class CalculatorSubApplication: SubApplication {
     }
 
     private func calculate() {
-        let operation = UserDataProvider.getString("Input operation +, -, *, /")
-        guard operation == "+" || operation == "-" || operation == "*" || operation == "/" else {
+        var selectionString = "Input operation: "
+        for symbol in operations.keys.sorted() {
+            selectionString += "\(symbol), "
+        }
+
+        let operationSymbol = UserDataProvider.getString(selectionString)
+        guard let operation = operations[operationSymbol] else {
             print("Wrong operation")
             return
         }
@@ -54,23 +116,12 @@ class CalculatorSubApplication: SubApplication {
         
         let secondNumber = UserDataProvider.getInt("Input second number")
         
-        let expression = "\(firstNumber) \(operation) \(secondNumber)"
+        let expression = "\(firstNumber) \(operation.symbol) \(secondNumber)"
         print("Calculate " + expression)
         
-        let result: Int
-        switch operation {
-        case "+":
-            result = firstNumber + secondNumber
-        case "-":
-            result = firstNumber - secondNumber
-        case "*":
-            result = firstNumber * secondNumber
-        case "/" where secondNumber == 0:
-            print("Division by zero is forbidden")
-            return
-        case "/":
-            result = firstNumber / secondNumber
-        default:
+        let result = operation.calculate(firstNumber, secondNumber)
+        
+        guard let result else {
             return
         }
         
